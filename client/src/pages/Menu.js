@@ -28,7 +28,7 @@ const Menu = () => {
 
   const fetchFoods = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/food');
+      const res = await axios.get('https://bite-hub-server.onrender.com/api/food');
       setFoods(res.data);
     } catch (err) {
       toast.error('Failed to load menu!');

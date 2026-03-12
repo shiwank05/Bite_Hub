@@ -26,7 +26,7 @@ const AdminDashboard = () => {
 
   const fetchOrders = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/orders', {
+      const res = await axios.get('https://bite-hub-server.onrender.com/api/orders', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setOrders(res.data);
@@ -40,7 +40,7 @@ const AdminDashboard = () => {
   const updateOrderStatus = async (orderId, status) => {
     try {
       const res = await axios.put(
-        `http://localhost:5000/api/orders/${orderId}`,
+        `https://bite-hub-server.onrender.com/api/orders/${orderId}`,
         { status },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -56,7 +56,7 @@ const AdminDashboard = () => {
   const updatePaymentStatus = async (orderId, paymentStatus) => {
     try {
       await axios.put(
-        `http://localhost:5000/api/orders/${orderId}`,
+        `https://bite-hub-server.onrender.com/api/orders/${orderId}`,
         { paymentStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       );

@@ -23,7 +23,7 @@ const AdminMenu = () => {
 
   const fetchFoods = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/food');
+      const res = await axios.get('https://bite-hub-server.onrender.com/api/food');
       setFoods(res.data);
     } catch (err) {
       toast.error('Failed to load foods!');
@@ -40,7 +40,7 @@ const AdminMenu = () => {
   const handleAddFood = async () => {
     try {
       const res = await axios.post(
-        'http://localhost:5000/api/food',
+        'https://bite-hub-server.onrender.com/api/food',
         { ...foodForm, price: Number(foodForm.price) },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -56,7 +56,7 @@ const AdminMenu = () => {
   const handleEditFood = async () => {
     try {
       const res = await axios.put(
-        `http://localhost:5000/api/food/${editFood._id}`,
+        `https://bite-hub-server.onrender.com/api/food/${editFood._id}`,
         { ...foodForm, price: Number(foodForm.price) },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -72,7 +72,7 @@ const AdminMenu = () => {
   const handleDeleteFood = async (foodId) => {
     if (!window.confirm('Are you sure you want to delete this item?')) return;
     try {
-      await axios.delete(`http://localhost:5000/api/food/${foodId}`, {
+      await axios.delete(`https://bite-hub-server.onrender.com/api/food/${foodId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setFoods(prev => prev.filter(f => f._id !== foodId));

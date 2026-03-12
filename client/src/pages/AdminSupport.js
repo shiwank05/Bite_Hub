@@ -21,7 +21,7 @@ const AdminSupport = () => {
   }, []);
 
   useEffect(() => {
-    socketRef.current = io('http://localhost:5000');
+    socketRef.current = io('https://bite-hub-server.onrender.com');
     socketRef.current.emit('joinAdmin');
 
     // New message from user
@@ -91,7 +91,7 @@ const AdminSupport = () => {
 
   const fetchChats = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/chat', {
+      const res = await axios.get('https://bite-hub-server.onrender.com/api/chat', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setChats(res.data);
@@ -127,7 +127,7 @@ const AdminSupport = () => {
   const resolveChat = async (chatId) => {
     try {
       await axios.put(
-        `http://localhost:5000/api/chat/${chatId}/resolve`,
+        `https://bite-hub-server.onrender.com/api/chat/${chatId}/resolve`,
         { isResolved: true },
         { headers: { Authorization: `Bearer ${token}` } }
       );

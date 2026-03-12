@@ -36,7 +36,7 @@ const Support = () => {
 
   const fetchChat = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/chat/my', {
+      const res = await axios.get('https://bite-hub-server.onrender.com/api/chat/my', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setMessages(res.data.messages || []);
@@ -49,7 +49,7 @@ const Support = () => {
   };
 
   const connectSocket = () => {
-    socketRef.current = io('http://localhost:5000');
+    socketRef.current = io('https://bite-hub-server.onrender.com');
 
     socketRef.current.on('connect', () => {
       setConnected(true);

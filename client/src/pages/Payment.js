@@ -49,7 +49,7 @@ const Payment = () => {
     setLoading(true);
     try {
       await axios.post(
-        'http://localhost:5000/api/orders',
+        'https://bite-hub-server.onrender.com/api/orders',
         {
           items: cartItems.map(item => ({
             food: item._id,

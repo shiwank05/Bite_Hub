@@ -18,7 +18,7 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/login', formData);
+      const res = await axios.post('https://bite-hub-server.onrender.com/api/auth/login', formData);
       login(res.data.user, res.data.token);
       toast.success(`Welcome back, ${res.data.user.name}! 🎉`);
       if (res.data.user.role === 'admin') {
@@ -34,7 +34,7 @@ const Login = () => {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = 'http://localhost:5000/api/auth/google';
+    window.location.href = 'https://bite-hub-server.onrender.com/api/auth/google';
   };
 
   return (

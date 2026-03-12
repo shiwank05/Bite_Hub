@@ -34,7 +34,7 @@ const Orders = () => {
 
   const fetchOrders = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/orders/myorders', {
+      const res = await axios.get('https://bite-hub-server.onrender.com/api/orders/myorders', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setOrders(res.data);

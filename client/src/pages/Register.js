@@ -22,7 +22,7 @@ const Register = () => {
     }
     setLoading(true);
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/register', {
+      const res = await axios.post('https://bite-hub-server.onrender.com/api/auth/register', {
         name: formData.name,
         email: formData.email,
         password: formData.password,
@@ -38,7 +38,7 @@ const Register = () => {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = 'http://localhost:5000/api/auth/google';
+    window.location.href = 'https://bite-hub-server.onrender.com/api/auth/google';
   };
 
   return (

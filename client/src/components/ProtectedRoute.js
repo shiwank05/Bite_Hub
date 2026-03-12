@@ -17,6 +17,7 @@ const ProtectedRoute = ({ children }) => {
     return () => {
       window.onpopstate = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (loading) {
