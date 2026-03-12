@@ -4,6 +4,40 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
+// ✅ Moved OUTSIDE AdminMenu so it's not recreated on every render
+const FoodModal = ({ title, foodForm, onChange, onSave, onClose }) => (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+      <h2 className="text-xl font-bold text-gray-800 mb-4">{title}</h2>
+      <div className="flex flex-col gap-3">
+        <input name="name" value={foodForm.name} onChange={onChange}
+          placeholder="Food Name" className="border-2 border-gray-200 rounded-xl px-4 py-2 focus:outline-none focus:border-orange-400" />
+        <textarea name="description" value={foodForm.description} onChange={onChange}
+          placeholder="Description" rows={2} className="border-2 border-gray-200 rounded-xl px-4 py-2 focus:outline-none focus:border-orange-400 resize-none" />
+        <input name="price" value={foodForm.price} onChange={onChange}
+          placeholder="Price (₹)" type="number" className="border-2 border-gray-200 rounded-xl px-4 py-2 focus:outline-none focus:border-orange-400" />
+        <select name="category" value={foodForm.category} onChange={onChange}
+          className="border-2 border-gray-200 rounded-xl px-4 py-2 focus:outline-none focus:border-orange-400">
+          <option value="">Select Category</option>
+          {['Burgers', 'Pizza', 'Pasta', 'Sides', 'Drinks', 'Desserts'].map(c => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
+        <input name="image" value={foodForm.image} onChange={onChange}
+          placeholder="Image URL" className="border-2 border-gray-200 rounded-xl px-4 py-2 focus:outline-none focus:border-orange-400" />
+        <label className="flex items-center gap-2 text-gray-700">
+          <input type="checkbox" name="available" checked={foodForm.available} onChange={onChange} className="w-4 h-4 accent-orange-500" />
+          Available
+        </label>
+      </div>
+      <div className="flex gap-3 mt-6">
+        <button onClick={onClose} className="flex-1 border-2 border-gray-200 text-gray-600 py-2 rounded-xl hover:bg-gray-50 transition font-medium">Cancel</button>
+        <button onClick={onSave} className="flex-1 bg-orange-500 text-white py-2 rounded-xl hover:bg-orange-600 transition font-bold">Save</button>
+      </div>
+    </div>
+  </div>
+);
+
 const AdminMenu = () => {
   const { user, token } = useAuth();
   const navigate = useNavigate();
@@ -34,7 +68,7 @@ const AdminMenu = () => {
 
   const handleFoodFormChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFoodForm({ ...foodForm, [name]: type === 'checkbox' ? checked : value });
+    setFoodForm(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   };
 
   const handleAddFood = async () => {
@@ -93,39 +127,6 @@ const AdminMenu = () => {
       available: food.available,
     });
   };
-
-  const FoodModal = ({ onSave, onClose, title }) => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-        <h2 className="text-xl font-bold text-gray-800 mb-4">{title}</h2>
-        <div className="flex flex-col gap-3">
-          <input name="name" value={foodForm.name} onChange={handleFoodFormChange}
-            placeholder="Food Name" className="border-2 border-gray-200 rounded-xl px-4 py-2 focus:outline-none focus:border-orange-400" />
-          <textarea name="description" value={foodForm.description} onChange={handleFoodFormChange}
-            placeholder="Description" rows={2} className="border-2 border-gray-200 rounded-xl px-4 py-2 focus:outline-none focus:border-orange-400 resize-none" />
-          <input name="price" value={foodForm.price} onChange={handleFoodFormChange}
-            placeholder="Price (₹)" type="number" className="border-2 border-gray-200 rounded-xl px-4 py-2 focus:outline-none focus:border-orange-400" />
-          <select name="category" value={foodForm.category} onChange={handleFoodFormChange}
-            className="border-2 border-gray-200 rounded-xl px-4 py-2 focus:outline-none focus:border-orange-400">
-            <option value="">Select Category</option>
-            {['Burgers', 'Pizza', 'Pasta', 'Sides', 'Drinks', 'Desserts'].map(c => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
-          <input name="image" value={foodForm.image} onChange={handleFoodFormChange}
-            placeholder="Image URL" className="border-2 border-gray-200 rounded-xl px-4 py-2 focus:outline-none focus:border-orange-400" />
-          <label className="flex items-center gap-2 text-gray-700">
-            <input type="checkbox" name="available" checked={foodForm.available} onChange={handleFoodFormChange} className="w-4 h-4 accent-orange-500" />
-            Available
-          </label>
-        </div>
-        <div className="flex gap-3 mt-6">
-          <button onClick={onClose} className="flex-1 border-2 border-gray-200 text-gray-600 py-2 rounded-xl hover:bg-gray-50 transition font-medium">Cancel</button>
-          <button onClick={onSave} className="flex-1 bg-orange-500 text-white py-2 rounded-xl hover:bg-orange-600 transition font-bold">Save</button>
-        </div>
-      </div>
-    </div>
-  );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -200,6 +201,8 @@ const AdminMenu = () => {
       {showAddFood && (
         <FoodModal
           title="Add New Food Item 🍔"
+          foodForm={foodForm}
+          onChange={handleFoodFormChange}
           onSave={handleAddFood}
           onClose={() => {
             setShowAddFood(false);
@@ -212,6 +215,8 @@ const AdminMenu = () => {
       {editFood && (
         <FoodModal
           title="Edit Food Item ✏️"
+          foodForm={foodForm}
+          onChange={handleFoodFormChange}
           onSave={handleEditFood}
           onClose={() => {
             setEditFood(null);

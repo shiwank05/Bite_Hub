@@ -4,74 +4,129 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
-const statusColors = {
-  'Pending': 'bg-yellow-100 text-yellow-700',
-  'Confirmed': 'bg-blue-100 text-blue-700',
-  'Preparing': 'bg-orange-100 text-orange-700',
-  'Out for Delivery': 'bg-purple-100 text-purple-700',
-  'Delivered': 'bg-green-100 text-green-700',
-};
+// ✅ Moved OUTSIDE AdminMenu so it's not recreated on every render
+const FoodModal = ({ title, foodForm, onChange, onSave, onClose }) => (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+      <h2 className="text-xl font-bold text-gray-800 mb-4">{title}</h2>
+      <div className="flex flex-col gap-3">
+        <input name="name" value={foodForm.name} onChange={onChange}
+          placeholder="Food Name" className="border-2 border-gray-200 rounded-xl px-4 py-2 focus:outline-none focus:border-orange-400" />
+        <textarea name="description" value={foodForm.description} onChange={onChange}
+          placeholder="Description" rows={2} className="border-2 border-gray-200 rounded-xl px-4 py-2 focus:outline-none focus:border-orange-400 resize-none" />
+        <input name="price" value={foodForm.price} onChange={onChange}
+          placeholder="Price (₹)" type="number" className="border-2 border-gray-200 rounded-xl px-4 py-2 focus:outline-none focus:border-orange-400" />
+        <select name="category" value={foodForm.category} onChange={onChange}
+          className="border-2 border-gray-200 rounded-xl px-4 py-2 focus:outline-none focus:border-orange-400">
+          <option value="">Select Category</option>
+          {['Burgers', 'Pizza', 'Pasta', 'Sides', 'Drinks', 'Desserts'].map(c => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
+        <input name="image" value={foodForm.image} onChange={onChange}
+          placeholder="Image URL" className="border-2 border-gray-200 rounded-xl px-4 py-2 focus:outline-none focus:border-orange-400" />
+        <label className="flex items-center gap-2 text-gray-700">
+          <input type="checkbox" name="available" checked={foodForm.available} onChange={onChange} className="w-4 h-4 accent-orange-500" />
+          Available
+        </label>
+      </div>
+      <div className="flex gap-3 mt-6">
+        <button onClick={onClose} className="flex-1 border-2 border-gray-200 text-gray-600 py-2 rounded-xl hover:bg-gray-50 transition font-medium">Cancel</button>
+        <button onClick={onSave} className="flex-1 bg-orange-500 text-white py-2 rounded-xl hover:bg-orange-600 transition font-bold">Save</button>
+      </div>
+    </div>
+  </div>
+);
 
-const AdminDashboard = () => {
+const AdminMenu = () => {
   const { user, token } = useAuth();
   const navigate = useNavigate();
-  const [orders, setOrders] = useState([]);
+  const [foods, setFoods] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showAddFood, setShowAddFood] = useState(false);
+  const [editFood, setEditFood] = useState(null);
+  const [foodForm, setFoodForm] = useState({
+    name: '', description: '', price: '', category: '', image: '', available: true
+  });
 
   useEffect(() => {
     if (user?.role !== 'admin') { navigate('/'); return; }
-    fetchOrders();
+    fetchFoods();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const fetchOrders = async () => {
+  const fetchFoods = async () => {
     try {
-      const res = await axios.get('https://bite-hub-server.onrender.com/api/orders', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setOrders(res.data);
+      const res = await axios.get('https://bite-hub-server.onrender.com/api/food');
+      setFoods(res.data);
     } catch (err) {
-      toast.error('Failed to load orders!');
+      toast.error('Failed to load foods!');
     } finally {
       setLoading(false);
     }
   };
 
-  const updateOrderStatus = async (orderId, status) => {
+  const handleFoodFormChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFoodForm(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+  };
+
+  const handleAddFood = async () => {
+    try {
+      const res = await axios.post(
+        'https://bite-hub-server.onrender.com/api/food',
+        { ...foodForm, price: Number(foodForm.price) },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setFoods(prev => [...prev, res.data]);
+      setShowAddFood(false);
+      setFoodForm({ name: '', description: '', price: '', category: '', image: '', available: true });
+      toast.success('Food item added! 🍔');
+    } catch (err) {
+      toast.error('Failed to add food!');
+    }
+  };
+
+  const handleEditFood = async () => {
     try {
       const res = await axios.put(
-        `https://bite-hub-server.onrender.com/api/orders/${orderId}`,
-        { status },
+        `https://bite-hub-server.onrender.com/api/food/${editFood._id}`,
+        { ...foodForm, price: Number(foodForm.price) },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setOrders(prev => prev.map(o =>
-        o._id === orderId ? { ...o, status: res.data.status, paymentStatus: res.data.paymentStatus } : o
-      ));
-      toast.success('Order status updated! ✅');
+      setFoods(prev => prev.map(f => f._id === editFood._id ? res.data : f));
+      setEditFood(null);
+      setFoodForm({ name: '', description: '', price: '', category: '', image: '', available: true });
+      toast.success('Food item updated! ✅');
     } catch (err) {
-      toast.error('Failed to update order!');
+      toast.error('Failed to update food!');
     }
   };
 
-  const updatePaymentStatus = async (orderId, paymentStatus) => {
+  const handleDeleteFood = async (foodId) => {
+    if (!window.confirm('Are you sure you want to delete this item?')) return;
     try {
-      await axios.put(
-        `https://bite-hub-server.onrender.com/api/orders/${orderId}`,
-        { paymentStatus },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setOrders(prev => prev.map(o =>
-        o._id === orderId ? { ...o, paymentStatus } : o
-      ));
-      toast.success('Payment status updated! ✅');
+      await axios.delete(`https://bite-hub-server.onrender.com/api/food/${foodId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setFoods(prev => prev.filter(f => f._id !== foodId));
+      toast.success('Food item deleted!');
     } catch (err) {
-      toast.error('Failed to update payment status!');
+      toast.error('Failed to delete food!');
     }
   };
 
-  const totalRevenue = orders.reduce((sum, o) => sum + o.totalAmount, 0);
-  const pendingOrders = orders.filter(o => o.status === 'Pending').length;
-  const deliveredOrders = orders.filter(o => o.status === 'Delivered').length;
+  const openEditModal = (food) => {
+    setEditFood(food);
+    setFoodForm({
+      name: food.name,
+      description: food.description,
+      price: food.price,
+      category: food.category,
+      image: food.image,
+      available: food.available,
+    });
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -79,112 +134,98 @@ const AdminDashboard = () => {
       {/* Header */}
       <div className="bg-gradient-to-br from-orange-500 to-orange-600 text-white py-8 px-4">
         <div className="max-w-6xl mx-auto">
-          <h1 className="text-3xl font-extrabold mb-1">Admin Dashboard 👨‍💼</h1>
-          <p className="text-orange-100">Welcome back, {user?.name}!</p>
+          <h1 className="text-3xl font-extrabold mb-1">Menu Management 🍔</h1>
+          <p className="text-orange-100">Add, edit or remove food items</p>
         </div>
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-8">
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          {[
-            { label: 'Total Orders', value: orders.length, icon: '📦', color: 'bg-blue-50 text-blue-700' },
-            { label: 'Pending Orders', value: pendingOrders, icon: '⏳', color: 'bg-yellow-50 text-yellow-700' },
-            { label: 'Delivered', value: deliveredOrders, icon: '✅', color: 'bg-green-50 text-green-700' },
-            { label: 'Total Revenue', value: `₹${totalRevenue}`, icon: '💰', color: 'bg-orange-50 text-orange-700' },
-          ].map(stat => (
-            <div key={stat.label} className={`${stat.color} rounded-2xl p-5 flex items-center gap-4`}>
-              <span className="text-4xl">{stat.icon}</span>
-              <div>
-                <p className="text-sm font-medium opacity-70">{stat.label}</p>
-                <p className="text-2xl font-extrabold">{stat.value}</p>
-              </div>
-            </div>
-          ))}
+        {/* Add Button */}
+        <div className="flex justify-end mb-6">
+          <button
+            onClick={() => setShowAddFood(true)}
+            className="bg-orange-500 text-white px-6 py-2 rounded-full font-bold hover:bg-orange-600 transition"
+          >
+            + Add Food Item
+          </button>
         </div>
 
-        {/* Orders Heading */}
-        <h2 className="text-xl font-bold text-gray-700 mb-4">📦 Orders ({orders.length})</h2>
-
-        {/* Orders List */}
-        <div className="flex flex-col gap-4">
-          {loading ? (
-            <div className="text-center py-20">
-              <div className="text-6xl animate-bounce">📦</div>
-              <p className="text-gray-500 mt-4">Loading orders...</p>
-            </div>
-          ) : orders.length === 0 ? (
-            <div className="text-center py-20 bg-white rounded-2xl">
-              <div className="text-6xl mb-4">📭</div>
-              <p className="text-gray-500 text-lg">No orders yet!</p>
-            </div>
-          ) : (
-            orders.map(order => (
-              <div key={order._id} className="bg-white rounded-2xl shadow-sm p-6">
-                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-                  <div>
-                    <p className="text-xs text-gray-400">ORDER ID</p>
-                    <p className="font-mono font-bold text-gray-700">#{order._id.slice(-8).toUpperCase()}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-400">CUSTOMER</p>
-                    <p className="font-semibold text-gray-700">{order.user?.name || 'N/A'}</p>
-                    <p className="text-xs text-gray-400">{order.user?.email}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-400">TOTAL</p>
-                    <p className="font-bold text-orange-500 text-lg">₹{order.totalAmount}</p>
-                  </div>
-                  <div className="flex flex-wrap gap-3">
-                    <div>
-                      <p className="text-xs text-gray-400 mb-1">ORDER STATUS</p>
-                      <select
-                        value={order.status}
-                        onChange={(e) => updateOrderStatus(order._id, e.target.value)}
-                        className={`px-3 py-1 rounded-full text-sm font-semibold border-0 cursor-pointer ${statusColors[order.status]}`}
-                      >
-                        {['Pending', 'Confirmed', 'Preparing', 'Out for Delivery', 'Delivered'].map(s => (
-                          <option key={s} value={s}>{s}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-400 mb-1">PAYMENT STATUS</p>
-                      <select
-                        value={order.paymentStatus}
-                        onChange={(e) => updatePaymentStatus(order._id, e.target.value)}
-                        className={`px-3 py-1 rounded-full text-sm font-semibold border-0 cursor-pointer
-                          ${order.paymentStatus === 'Paid'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-red-100 text-red-700'
-                          }`}
-                      >
-                        <option value="Unpaid">❌ Unpaid</option>
-                        <option value="Paid">✅ Paid</option>
-                      </select>
-                    </div>
+        {/* Food Grid */}
+        {loading ? (
+          <div className="text-center py-20">
+            <div className="text-6xl animate-bounce">🍔</div>
+            <p className="text-gray-500 mt-4">Loading menu...</p>
+          </div>
+        ) : foods.length === 0 ? (
+          <div className="text-center py-20 bg-white rounded-2xl">
+            <div className="text-6xl mb-4">🍽️</div>
+            <p className="text-gray-500 text-lg">No food items yet!</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {foods.map(food => (
+              <div key={food._id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                <img
+                  src={food.image}
+                  alt={food.name}
+                  className="w-full h-40 object-cover"
+                  onError={(e) => { e.target.src = 'https://via.placeholder.com/400x300?text=Food'; }}
+                />
+                <div className="p-4">
+                  <h3 className="font-bold text-gray-800">{food.name}</h3>
+                  <p className="text-orange-500 font-bold">₹{food.price}</p>
+                  <p className="text-xs text-gray-400">{food.category}</p>
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full mt-1 inline-block
+                    ${food.available ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-500'}`}>
+                    {food.available ? '✅ Available' : '❌ Unavailable'}
+                  </span>
+                  <div className="flex gap-2 mt-3">
+                    <button onClick={() => openEditModal(food)}
+                      className="flex-1 bg-blue-50 text-blue-600 py-1 rounded-lg text-sm font-semibold hover:bg-blue-100 transition">
+                      ✏️ Edit
+                    </button>
+                    <button onClick={() => handleDeleteFood(food._id)}
+                      className="flex-1 bg-red-50 text-red-500 py-1 rounded-lg text-sm font-semibold hover:bg-red-100 transition">
+                      🗑️ Delete
+                    </button>
                   </div>
                 </div>
-                <div className="bg-gray-50 rounded-xl p-3 mb-3">
-                  {order.items.map((item, i) => (
-                    <div key={i} className="flex justify-between text-sm text-gray-600">
-                      <span>{item.name} × {item.quantity}</span>
-                      <span>₹{item.price * item.quantity}</span>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-sm text-gray-500">📍 {order.address}</p>
-                <p className="text-xs text-gray-400 mt-1">
-                  {new Date(order.createdAt).toLocaleString('en-IN')}
-                </p>
               </div>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
+
+      {/* Add Food Modal */}
+      {showAddFood && (
+        <FoodModal
+          title="Add New Food Item 🍔"
+          foodForm={foodForm}
+          onChange={handleFoodFormChange}
+          onSave={handleAddFood}
+          onClose={() => {
+            setShowAddFood(false);
+            setFoodForm({ name: '', description: '', price: '', category: '', image: '', available: true });
+          }}
+        />
+      )}
+
+      {/* Edit Food Modal */}
+      {editFood && (
+        <FoodModal
+          title="Edit Food Item ✏️"
+          foodForm={foodForm}
+          onChange={handleFoodFormChange}
+          onSave={handleEditFood}
+          onClose={() => {
+            setEditFood(null);
+            setFoodForm({ name: '', description: '', price: '', category: '', image: '', available: true });
+          }}
+        />
+      )}
     </div>
   );
 };
 
-export default AdminDashboard;
+export default AdminMenu;
